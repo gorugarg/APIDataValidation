@@ -1,0 +1,6 @@
+oracleDB:
+  host: "localhost"
+  port: "1521"
+  user: "SYS AS SYSDBA"
+  instance: "XE"
+interfaceName: "client-eapi"

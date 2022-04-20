@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd">
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="7783631e-e031-4b50-8ccc-540d0b3afe44" >
+		<http:listener-connection host="0.0.0.0" port="8098" />
+	</http:listener-config>
+	<flow name="sample-interface-test" doc:id="66221da8-c58b-4857-9c9e-ec0170fb0d03" >
+		<http:listener doc:name="Listener" doc:id="4415118d-eda1-4ce7-8e5a-fe3db578682d" path="/apivalidation" config-ref="HTTP_Listener_config1">
+			<http:error-response statusCode="#[vars.statusCode]">
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<flow-ref doc:name="Flow Reference" doc:id="64fd5de4-0dfe-4b72-b3d6-41a2a230c957" name="storage-hashmap.xml" />
+		<choice doc:name="Choice" doc:id="75291a05-e93d-4cde-b53d-f635258810b0" >
+			<when expression="#[payload.validationDataOutput.status == true]">
+				<ee:transform doc:name="Transform Message" doc:id="d47ed242-bbe6-4e66-9a94-6c2802edd79d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Result" : "Validation successfull, we can start further processing of api"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise >
+				<raise-error doc:name="Raise error" doc:id="de3341ea-8684-4621-8494-48c3cb96fa57" type="APIVALIDATION:FAILURE"/>
+			</otherwise>
+		</choice>
+		<error-handler ref="global-error-handler"/>
+	</flow>
+</mule>

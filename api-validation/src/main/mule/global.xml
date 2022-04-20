@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="1ef63972-0d9e-4dee-902b-78201a001d6a" >
+		<db:oracle-connection host="${oracleDB.host}" user="${oracleDB.user}" password="qUw7o2c***" instance="${oracleDB.instance}" port="${oracleDB.port}"/>
+	</db:config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="c3c976cf-4af5-498c-a97d-ee21c607858d" persistent="false" maxEntries="10000"/>
+	<configuration-properties doc:name="Configuration properties" doc:id="03338185-7f52-46bb-83de-b0ba0f5450aa" file="dev.yaml" />
+	
+	
+</mule>

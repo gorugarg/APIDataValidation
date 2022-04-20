@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:java="http://www.mulesoft.org/schema/mule/java"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="storage-objecstore.xml" doc:id="202fde54-9ff6-48b0-aa48-974763c15176" >
+		<until-successful maxRetries="1" doc:name="Until Successful" doc:id="471ea2ae-4a2d-4afc-a07b-8cc105f28831" millisBetweenRetries="600">
+			<try doc:name="Try" doc:id="71e4d274-9e34-48ba-a41d-febabedb5b57" >
+				<os:retrieve doc:name="Retrieve" doc:id="cc29ce5f-6f7e-4005-b4c4-18879aa9458a" key="${interfaceName}" objectStore="Object_store" target="javaOutput"/>
+				<choice doc:name="Choice" doc:id="327204f8-b2e4-4bf4-b33c-bce08b0a7f5c" >
+					<when expression="#[! isEmpty(vars.javaOutput)]">
+						<ee:transform doc:name="ConvertStrngtoJson" doc:id="9b9353a7-9db3-48a5-b4e9-a7d10023cd36">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="apiValidation"><![CDATA[%dw 2.0
+output application/json
+---
+read(vars.javaOutput as String,"application/json")]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+					</when>
+					<otherwise >
+						<logger level="WARN" doc:name="Logger" doc:id="ee6d2efc-44a4-413e-9d41-19fdb100c22c" message="Trying to reload cache again for :${interfaceName}"/>
+						<raise-error doc:name="Raise error" doc:id="1f0f3ce2-085c-4b05-aaa5-69b87e10de2e" type="APIVALIDATION:CACHE_NOT_LOADED"/>
+					</otherwise>
+				</choice>
+				<error-handler >
+					<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="416e4ede-8019-4815-9cb2-a2e726c6672f" type="APIVALIDATION:CACHE_NOT_LOADED">
+						<flow-ref doc:name="Flow Reference" doc:id="04409cb9-0a5c-469a-9210-7ed7d647792c" name="SchedulerFlow"/>
+					</on-error-propagate>
+				</error-handler>
+			</try>
+		</until-successful>
+		<ee:transform doc:name="ValidationLogic" doc:id="9d284722-adf8-4adb-a5b5-b695d443a842">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+
+vars.apiValidation.DataElement map(current,index)-> {(
+	do { 
+		var apiFieldValue = current.ElementPath splitBy "." reduce(e,acc=payload) -> acc[e]
+		var mandatoryFlag = if(current.Mandatory ==true and isEmpty(apiFieldValue)) false else true
+		var minLength = if(! isEmpty(current.MinLength)) sizeOf(apiFieldValue) >= current.MinLength else true
+		var maxLength = if(! isEmpty(current.MaxLength)) sizeOf(apiFieldValue) <= current.MaxLength else true
+		var enumFlag = if(! isEmpty(current.Enum)) indexOf(current.Enum splitBy "," , apiFieldValue as String) >=0  else false
+		var patternFlag = if(! isEmpty(current.Pattern)) matches(apiFieldValue,current.Pattern) else true
+		 ---
+		if(mandatoryFlag ==false)
+		{
+			"result":false,
+			"name":current.ElementPath,
+			"errorCode": "'field required'",
+			"ResultData":{
+				"elementPath":current.ElementPath,
+				"value": apiFieldValue}
+			
+		}
+		else{
+			"result":if (minLength==true and maxLength==true and enumFlag==true and patternFlag==true) true else false,
+			"name":current.ElementPath,
+			"ResultData":{
+				"elementPath":current.ElementPath,
+				"value": apiFieldValue,
+				"minLengthFlag": minLength,
+				"maxLengthFlag": maxLength,
+				"enumFlag": enumFlag,
+				"pattern":patternFlag
+					
+			}
+			
+		}
+	}
+	
+)}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="3653dd70-c61b-4c69-855d-e2ecc0f81530" message="Validation Results :- #[payload]"/>
+		<ee:transform doc:name="EndResult" doc:id="9191889a-838a-464b-bf80-9f719e4ff4d7">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"validationDataOutput":{
+	"dataElement":payload filter($.result==false) map (current,index)->{
+		elementPath: current.name,
+		validationResult:"Fail"	,
+		"flag": if(! isEmpty(current.errorCode)) 'mandatoryFlag' 
+				else if(contains(current.ResultData.minLengthFlag,false)) 'minLength' 
+				else if(contains(current.ResultData.maxLengthFlag,false)) 'maxLength'
+				else if(contains(current.ResultData.enumFlag,false))'enum'
+				else 'pattern'
+		
+},
+"status": if(indexOf(payload.result,false)>=0) false else true
+
+}
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

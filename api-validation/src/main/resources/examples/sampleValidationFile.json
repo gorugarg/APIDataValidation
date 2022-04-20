@@ -1,0 +1,16 @@
+{"DataElement": [
+      {
+        "ElementPath": "employee.employeeDetails.employeeNumber",
+        "MinLength": "1",
+        "MaxLength": "50",
+        "Enum": "2,5,7,9,11",
+        "Mandatory":true
+      },
+      {
+        "ElementPath": "employee.employeeDetails.employeeName",
+        "MinLength": "2",
+        "MaxLength": "255",
+        "Pattern": "([a-z]*).[a-z]*",
+        "Enum": "Gaurav,Saurav,gaurav.com"
+      }
+    ]}

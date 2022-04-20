@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:java="http://www.mulesoft.org/schema/mule/java"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	
+	<flow name="SchedulerFlow" doc:id="cec1bfe7-22bf-47ee-bd10-940b89ebfe93" >
+		<scheduler doc:name="Scheduler" doc:id="8d0e1a95-1448-4e79-9d11-50be9d3b7ec9" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="10000000"/>
+			</scheduling-strategy>
+		</scheduler>
+		<db:select doc:name="Select" doc:id="871fb080-4b0e-454c-b119-675d65ed33d7" config-ref="Database_Config">
+			<db:sql ><![CDATA[select interfacename, validationstring from apivalidation where interfacename = :interfacename]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+interfacename : Mule::p('interfaceName')
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="103bb274-eec5-4079-8833-ef5ad35fc060" >
+			<when expression="#[! isEmpty(payload)]">
+				<scatter-gather doc:name="Scatter-Gather" doc:id="c159c748-c97a-4a14-adfd-d00bbb811405">
+			<route>
+				<os:store doc:name="Store" doc:id="fb90ee94-d5ae-4ce0-84d2-005ff25755bf" key="#[payload.INTERFACENAME[0]]" objectStore="Object_store">
+			<os:value><![CDATA[#[payload.VALIDATIONSTRING[0]]]]></os:value>
+		</os:store>
+			</route>
+			<route>
+				<java:invoke-static method="setData(java.lang.String,java.lang.String)" doc:name="Invoke static" doc:id="57cf45cf-c2ef-4708-9198-c1e8bddbc284" class="apivalidation.DataValidation">
+			<java:args><![CDATA[#[{arg0:payload.INTERFACENAME[0] as String,
+arg1: payload.VALIDATIONSTRING[0]}]]]></java:args>
+		</java:invoke-static>
+			</route>
+		</scatter-gather>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="09681290-c39a-49d9-9db6-38bdbf9dfaea" message="No corresponding entry in APIValidation DB for :${interfaceName}"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="d6253bec-2d69-45ab-ba58-bfe87d6c27a8" message="API Validation Cache Successfully loaded for :${interfaceName}"/>
+	</flow>
+</mule>

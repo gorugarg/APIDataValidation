@@ -1,0 +1,9 @@
+%dw 2.0
+
+type auto_202fde54_9ff6_48b0_aa48_974763c15176_Output_Payload = {|
+  validationDataOutput: {|
+    dataElement: Null, 
+    status: Boolean | Boolean
+  |}
+|}
+

@@ -1,0 +1,18 @@
+{
+  "validationDataOutput": {
+    "dataElement": [
+	{
+            "elementPath": "employee.employeeDetails.employeeNumber",
+            "validationResult": "Fail",
+            "flag": "enum"
+        },
+        {
+            "elementPath": "employee.employeeDetails.employeeName",
+            "validationResult": "Fail",
+            "flag": "enum"
+        }
+      
+    ],
+    "status": true
+  }
+}

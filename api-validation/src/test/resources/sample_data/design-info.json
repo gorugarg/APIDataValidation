@@ -1,0 +1,10 @@
+{
+  "sampleData": {
+    "9d284722-adf8-4adb-a5b5-b695d443a842": {
+      "vars-validationJson": "sample_data/java.dwl"
+    },
+    "9b9353a7-9db3-48a5-b4e9-a7d10023cd36": {
+      "vars-javaOutput": "sample_data/serializable.dwl"
+    }
+  }
+}
